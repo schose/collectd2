@@ -1,0 +1,142 @@
+<form>
+  <label>Storage Performance</label>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="multiselect" searchWhenChanged="true" token="hostmultiselect">
+      <label>Select Hosts:</label>
+      <default>*</default>
+      <search>
+        <query>| metadata type=hosts `collectd_index` 
+| search totalCount&gt;0 
+| stats count BY host</query>
+      </search>
+      <choice value="*">All Hosts</choice>
+      <prefix>(</prefix>
+      <valuePrefix>host ="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <suffix>)</suffix>
+      <fieldForLabel>host</fieldForLabel>
+      <fieldForValue>host</fieldForValue>
+    </input>
+    <input type="dropdown" searchWhenChanged="true" token="operation">
+      <label>Select Metric:</label>
+      <selectFirstChoice>true</selectFirstChoice>
+      <choice value="ops">I/O Per Second</choice>
+      <choice value="time">Latency</choice>
+      <choice value="octets">Volume</choice>
+    </input>
+    <input type="dropdown" searchWhenChanged="true" token="disk">
+      <label>Select Disk</label>
+      <search>
+        <query>`collectd_index` (metric=disk_ops.read OR metric=disk_ops.write) 
+| stats count BY object
+| eval object_new=replace(object,"disk-","") 
+| table object object_new</query>
+      </search>
+      <default>*</default>
+      <choice value="*">All Disks</choice>
+      <fieldForLabel>object_new</fieldForLabel>
+      <fieldForValue>object</fieldForValue>
+    </input>
+    <input type="time" searchWhenChanged="true">
+      <label>Select Time:</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <chart>
+        <title>$operation$ Read/Write ratio</title>
+        <search>
+          <query>`collectd_index` (metric=disk_$operation$.read OR metric=disk_$operation$.write) object=$disk$ $hostmultiselect$ 
+| timechart max(disk_$operation$_read) AS Read max(disk_$operation$_write) AS Write BY metric</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+      </chart>
+    </panel>
+    <panel>
+      <table>
+        <title>Average $operation$ by Host</title>
+        <search>
+          <query>`collectd_index` (metric="disk_$operation$.read" OR metric="disk_$operation$.write") object=$disk$ $hostmultiselect$  
+| stats avg(disk_$operation$_read) AS Read avg(disk_$operation$_write) AS Write BY host 
+| eval Total=Read+Write 
+| sort -Total 
+| eval Total=round(Total,2) 
+| eval Read=round(Read,2) 
+| eval Write=round(Write,2)</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Top Average Write $operation$ by Device</title>
+        <search>
+          <query>`collectd_index` metric="disk_$operation$.write" object=$disk$ $hostmultiselect$
+| stats avg(value) AS value BY host object 
+| sort -value 
+| eval value=round(value,2)</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Top Average Read $operation$ by Device</title>
+        <search>
+          <query>`collectd_index` metric="disk_$operation$.read" object=$disk$ $hostmultiselect$
+| stats avg(value) AS value BY host object 
+| sort -value 
+| eval value=round(value,2)</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</form>

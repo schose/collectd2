@@ -1,0 +1,148 @@
+<form script="custom_layout_width.js">
+  <label>Network Throughput and Errors</label>
+  <!-- errors -->
+  <fieldset submitButton="false" autoRun="true">
+    <input type="multiselect" searchWhenChanged="true" token="hostmultiselect">
+      <label>Select Hosts:</label>
+      <default>*</default>
+      <search>
+        <query>| metadata type=hosts `collectd_index` 
+| search totalCount&gt;0 
+| stats count BY host</query>
+      </search>
+      <choice value="*">All</choice>
+      <prefix>(</prefix>
+      <valuePrefix>host ="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <suffix>)</suffix>
+      <fieldForLabel>host</fieldForLabel>
+      <fieldForValue>host</fieldForValue>
+    </input>
+    <input type="dropdown" searchWhenChanged="true" token="object">
+      <label>Select Object</label>
+      <default>*</default>
+      <choice value="*">All Interfaces</choice>
+      <search>
+        <query>`collectd_index` $hostmultiselect$ object=interface-* if_packets_rx&gt;0 OR if_packets_tx&gt;0 
+| stats count BY object
+| sort object
+| fields - count</query>
+      </search>
+      <initialValue>*</initialValue>
+      <fieldForLabel>object</fieldForLabel>
+      <fieldForValue>object</fieldForValue>
+    </input>
+    <input type="dropdown" searchWhenChanged="true" token="statsfunc">
+      <label>Statistical Function</label>
+      <choice value="min">Minimum</choice>
+      <choice value="mean">Mean</choice>
+      <choice value="avg">Average</choice>
+      <choice value="max">Maximum</choice>
+      <default>avg</default>
+      <initialValue>avg</initialValue>
+    </input>
+    <input type="time" searchWhenChanged="true">
+      <label>Select Time:</label>
+      <default>
+        <earliestTime>-4h@m</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel id="panel1_setWidth_67">
+      <chart>
+        <title>Packet Throughput by Host</title>
+        <search>
+          <query>`collectd_index` $hostmultiselect$ object=$object$ metric="if_packets.*"
+| timechart $statsfunc$(value) AS Value BY host</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.text">$metric$ by Host over Time</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">collapsed</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+      </chart>
+    </panel>
+    <panel id="panel1_setWidth_33">
+      <table>
+        <title>Packet Per Second by Host</title>
+        <search>
+          <query>`collectd_index` $hostmultiselect$ object=$object$ metric="if_packets.*"
+| stats $statsfunc$(value) AS Value BY host 
+| eval "P/S"=round(Value,2)</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <!--
+`collectd_index` $hostmultiselect$ if_packets_rx=* OR if_packets_tx=* | 
+bucket span=5m _time |
+stats avg(if_packets_tx) as tx avg(if_packets_rx) as rx by object host| 
+eval total = rx+tx | 
+search total>0.1 | 
+stats avg(total) as avg by host|
+sort -avg | 
+eval avg=round(avg,2) | 
+
+-->
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Packets Per Second by Host and Interface</title>
+        <search>
+          <query>`collectd_index` $hostmultiselect$ if_packets_rx=* OR if_packets_tx=* 
+| stats $statsfunc$(if_packets_tx) AS Transmitted $statsfunc$(if_packets_rx) AS Received BY object host 
+| eval Total=Transmitted+Received
+| search Total&gt;0.1 
+| sort -Total 
+| head 20 
+| eval Transmitted=round(Transmitted,2), Received=round(Received,2), Total=round(Total,2) 
+| table host, object, Total, Transmitted, Received
+| rename Total AS "Total P/S" object AS Interface</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Error by Host and Interface</title>
+        <search>
+          <query>`collectd_index` $hostmultiselect$ metric="if_errors.*"  value&gt;0 
+| stats sum(value) AS "Total Errors" BY host object
+| rename object AS Interface</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+</form>

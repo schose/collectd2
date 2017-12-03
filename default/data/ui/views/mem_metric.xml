@@ -1,0 +1,298 @@
+<form script="custom_layout_width.js">
+  <label>Memory</label>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="multiselect" searchWhenChanged="true" token="hostmultiselect">
+      <label>Select Hosts:</label>
+      <default>*</default>
+      <search>
+        <query>| metadata type=hosts `collectd_index` 
+| search totalCount&gt;0 
+| stats count BY host</query>
+      </search>
+      <choice value="*">All Hosts</choice>
+      <prefix>(</prefix>
+      <valuePrefix>host ="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <suffix>)</suffix>
+      <fieldForLabel>host</fieldForLabel>
+      <fieldForValue>host</fieldForValue>
+    </input>
+    <input type="dropdown" token="statsfunc" searchWhenChanged="true">
+      <label>Statistical Function</label>
+      <choice value="min">Minimum</choice>
+      <choice value="mean">Mean</choice>
+      <choice value="avg">Average</choice>
+      <choice value="max">Maximum</choice>
+      <default>avg</default>
+      <initialValue>avg</initialValue>
+    </input>
+    <input type="time" searchWhenChanged="true">
+      <label>Select Time:</label>
+      <default>
+        <earliestTime>-24h@h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel id="panel1_setWidth_67">
+      <chart>
+        <title>Memory Used by Host (Top 15)</title>
+        <search>
+          <query>`collectd_index` $hostmultiselect$ object=memory metric="memory-used" 
+| eval mbytes=((value/1024)/1024) 
+| timechart $statsfunc$(mbytes) AS mbytes BY host useother=f limit=15</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.text">$metric$ by host over time</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">MB</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+      </chart>
+    </panel>
+    <panel id="panel1_setWidth_33">
+      <table>
+        <title>Memory Used by Host (Top 15)</title>
+        <search>
+          <query>`collectd_index` $hostmultiselect$ object=memory metric="memory-used" 
+| stats avg(value) AS Average max(value) AS Maximum BY host 
+| sort 15 -Maximum 
+| eval Average = `format_bytes(Average)`, Maximum = `format_bytes(Maximum)`</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="count">15</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel id="panel2_setWidth_67">
+      <chart>
+        <title>Memory Free by Host (Top 15)</title>
+        <search>
+          <query>`collectd_index` $hostmultiselect$ object=memory metric="memory-free" 
+| eval mbytes=((value/1024)/1024) 
+| timechart $statsfunc$(mbytes) BY host useother=f limit=15</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.text">$metric$ by host over time</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">MB</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+      </chart>
+    </panel>
+    <panel id="panel2_setWidth_33">
+      <table>
+        <title>Memory Free by Host (Top 15)</title>
+        <search>
+          <query>`collectd_index` $hostmultiselect$ object=memory metric="memory-free" 
+| stats avg(value) AS Average max(value) AS Maximum BY host 
+| sort 15 -Maximum 
+| eval Average = `format_bytes(Average)`, Maximum = `format_bytes(Maximum)`</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="count">15</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel id="panel3_setWidth_67">
+      <chart>
+        <title>Memory Cached by Host (Top 15)</title>
+        <search>
+          <query>`collectd_index` $hostmultiselect$ object=memory metric="memory-cached" 
+| eval mbytes=((value/1024)/1024) 
+| timechart $statsfunc$(mbytes) BY host useother=f limit=15</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.text">$metric$ by host over time</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">MB</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+      </chart>
+    </panel>
+    <panel id="panel3_setWidth_33">
+      <table>
+        <title>Memory Cached by Host (Top 15)</title>
+        <search>
+          <query>`collectd_index` $hostmultiselect$ object=memory metric="memory-cached" 
+| stats avg(value) AS Average max(value) AS Maximum BY host 
+| sort 15 -Maximum 
+| eval Average = `format_bytes(Average)`, Maximum = `format_bytes(Maximum)`</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="count">15</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel id="panel4_setWidth_67">
+      <chart>
+        <title>Memory Buffered by Host (Top 15)</title>
+        <search>
+          <query>`collectd_index` $hostmultiselect$ object=memory metric="memory-buffered" 
+| eval mbytes=((value/1024)/1024) 
+| timechart $statsfunc$(mbytes) BY host useother=f limit=15</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.text">$metric$ by host over time</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">MB</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+      </chart>
+    </panel>
+    <panel id="panel4_setWidth_33">
+      <table>
+        <title>Memory Buffered by Host (Top 15)</title>
+        <search>
+          <query>`collectd_index` $hostmultiselect$ object=memory metric="memory-buffered" 
+| stats avg(value) AS Average max(value) AS Maximum BY host 
+| sort 15 -Maximum
+| eval Average=`format_bytes(Average)`, Maximum=`format_bytes(Maximum)`</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel id="panel5_setWidth_67">
+      <chart>
+        <title>Swap Used by Host (Top 15)</title>
+        <search>
+          <query>`collectd_index` $hostmultiselect$ object=swap metric="swap-used" 
+| eval mbytes=((value/1024)/1024) 
+| timechart $statsfunc$(mbytes) BY host useother=f limit=15</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.text">$metric$ by host over time</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">MB</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+      </chart>
+    </panel>
+    <panel id="panel5_setWidth_33">
+      <table>
+        <title>Swap Used by Host (Top 15)</title>
+        <search>
+          <query>`collectd_index` $hostmultiselect$ object=swap metric="swap-used" 
+| stats avg(value) AS Average max(value) AS Maximum BY host 
+| sort 15 -Maximum 
+| eval Average = `format_bytes(Average)`, Maximum = `format_bytes(Maximum)`</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</form>
