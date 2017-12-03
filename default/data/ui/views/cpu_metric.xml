@@ -5,10 +5,11 @@
       <label>Select Hosts:</label>
       <default>*</default>
       <search>
-        <query>| metadata type=hosts `collectd_index` 
-| search totalCount&gt;0 
-| stats count BY host
-| fields - count</query>
+        <query>
+        <![CDATA[
+      | mstats count where `collectd_index` metric_name=* by host | fields host | sort host
+      ]]>        
+        </query>
       </search>
       <choice value="*">all</choice>
       <prefix>(</prefix>
@@ -55,9 +56,19 @@
       <chart>
         <title>CPU Usage by Host (Top 15)</title>
         <search>
-          <query>`collectd_index` metric="cpu-idle" $hostmultiselect$ object="$object$" 
+          <query>
+          
+<!--`collectd_index` metric="cpu-idle" $hostmultiselect$ object="$object$" 
 | eval cpu-used=100-(value)
-| timechart $statsfunc$(cpu-used) BY host useother=f limit=15</query>
+| timechart $statsfunc$(cpu-used) BY host useother=f limit=15-->
+
+      
+        <![CDATA[
+         | mstats prestats=t avg(_value) where $hostmultiselect$  `collectd_index` metric_name=cpu.idle.value by host span=10m 
+         | timechart avg(_value) span=10m  useother=f limit=15 by host
+         | foreach * [eval <<FIELD>>=round(100-'<<FIELD>>',2)]
+        ]]>
+      </query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -107,8 +118,16 @@
       <chart>
         <title>System CPU by Host (Top 15)</title>
         <search>
-          <query>`collectd_index` metric="cpu-system" $hostmultiselect$ object="$object$" 
-| timechart $statsfunc$(value) BY host useother=f limit=15</query>
+          <query>
+          <!--`collectd_index` metric="cpu-system" $hostmultiselect$ object="$object$" 
+| timechart $statsfunc$(value) BY host useother=f limit=15 -->
+        <![CDATA[
+         | mstats prestats=t avg(_value) where $hostmultiselect$  `collectd_index` metric_name=cpu.system.value by host span=10m 
+         | timechart avg(_value) span=10m  useother=f limit=15 by host
+         | foreach * [eval <<FIELD>>=round('<<FIELD>>',2)]
+        ]]>
+
+</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -157,8 +176,18 @@
       <chart>
         <title>User CPU by Host (Top 15)</title>
         <search>
-          <query>`collectd_index` metric="cpu-user" $hostmultiselect$ object="$object$" 
-| timechart $statsfunc$(value) BY host useother=f limit=15</query>
+          <query>
+          <!--`collectd_index` metric="cpu-user" $hostmultiselect$ object="$object$" 
+| timechart $statsfunc$(value) BY host useother=f limit=15
+        -->
+
+        <![CDATA[
+         | mstats prestats=t avg(_value) where $hostmultiselect$  `collectd_index` metric_name=cpu.user.value by host span=10m 
+         | timechart avg(_value) span=10m  useother=f limit=15 by host
+         | foreach * [eval <<FIELD>>=round('<<FIELD>>',2)]
+        ]]>
+
+</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -187,7 +216,8 @@
       <table>
         <title>User CPU by Host (Top 15)</title>
         <search>
-          <query>`collectd_index` metric="cpu-user" $hostmultiselect$ object="$object$" 
+          <query>
+          `collectd_index` metric="cpu-user" $hostmultiselect$ object="$object$" 
 | stats avg(value) AS Average max(value) AS Maximum BY host 
 | sort 15 -Maximum 
 | eval Average=round(Average,2) . " %", Maximum=round(Maximum,2) . " %"</query>
@@ -207,8 +237,17 @@
       <chart>
         <title>CPU I/O Wait by Host (Top 15)</title>
         <search>
-          <query>`collectd_index` metric="cpu-wait" $hostmultiselect$ object="$object$" 
-| timechart $statsfunc$(value) BY host useother=f limit=15</query>
+          <query>
+          <!--`collectd_index` metric="cpu-wait" $hostmultiselect$ object="$object$" 
+| timechart $statsfunc$(value) BY host useother=f limit=15-->
+
+        <![CDATA[
+         | mstats prestats=t avg(_value) where $hostmultiselect$  `collectd_index` metric_name=cpu.wait.value by host span=10m 
+         | timechart avg(_value) span=10m  useother=f limit=15 by host
+         | foreach * [eval <<FIELD>>=round('<<FIELD>>',2)]
+        ]]>
+        
+        </query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
