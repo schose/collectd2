@@ -5,9 +5,11 @@
       <label>Select Hosts:</label>
       <default>*</default>
       <search>
-        <query>| metadata type=hosts `collectd_index` 
-| search totalCount&gt;0 
-| stats count BY host</query>
+        <query>
+      <![CDATA[
+      | mstats count where `collectd_index` metric_name=* by host | fields host | sort host
+      ]]>      
+        </query>
       </search>
       <choice value="*">All Hosts</choice>
       <prefix>(</prefix>
@@ -40,9 +42,18 @@
       <chart>
         <title>Memory Used by Host (Top 15)</title>
         <search>
-          <query>`collectd_index` $hostmultiselect$ object=memory metric="memory-used" 
+          <query>
+<!-->
+`collectd_index` $hostmultiselect$ object=memory metric="memory-used" 
 | eval mbytes=((value/1024)/1024) 
-| timechart $statsfunc$(mbytes) AS mbytes BY host useother=f limit=15</query>
+| timechart $statsfunc$(mbytes) AS mbytes BY host useother=f limit=15
+-->
+<![CDATA[
+| mstats prestats=t $statsfunc$(_value) where `collectd_index` $hostmultiselect$ metric_name="memory.used.value" by host span=10m
+| timechart span=10m $statsfunc$(_value) by host
+| foreach * [eval <<FIELD>>=round('<<FIELD>>'/1024/1024,2)]
+]]>
+</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -58,7 +69,7 @@
         <option name="charting.axisY2.enabled">0</option>
         <option name="charting.axisY2.scale">inherit</option>
         <option name="charting.chart">line</option>
-        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
         <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
         <option name="charting.chart.stackMode">default</option>
         <option name="charting.chart.style">shiny</option>
@@ -72,10 +83,19 @@
       <table>
         <title>Memory Used by Host (Top 15)</title>
         <search>
-          <query>`collectd_index` $hostmultiselect$ object=memory metric="memory-used" 
+          <query>
+<!--`collectd_index` $hostmultiselect$ object=memory metric="memory-used" 
 | stats avg(value) AS Average max(value) AS Maximum BY host 
 | sort 15 -Maximum 
-| eval Average = `format_bytes(Average)`, Maximum = `format_bytes(Maximum)`</query>
+| eval Average = `format_bytes(Average)`, Maximum = `format_bytes(Maximum) -->
+
+<![CDATA[
+      | mstats avg(_value) as Avg max(_value) as Max where `collectd_index` $hostmultiselect$ metric_name="memory.used.value" by host
+      | sort 15 -Max 
+      | eval Avg = `format_bytes(Avg)`, Max = `format_bytes(Max)`
+]]>
+
+</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -92,9 +112,17 @@
       <chart>
         <title>Memory Free by Host (Top 15)</title>
         <search>
-          <query>`collectd_index` $hostmultiselect$ object=memory metric="memory-free" 
+          <query>
+<!--`collectd_index` $hostmultiselect$ object=memory metric="memory-free" 
 | eval mbytes=((value/1024)/1024) 
-| timechart $statsfunc$(mbytes) BY host useother=f limit=15</query>
+| timechart $statsfunc$(mbytes) BY host useother=f limit=15 -->
+
+      <![CDATA[
+      | mstats prestats=t $statsfunc$(_value) where `collectd_index` $hostmultiselect$ metric_name="memory.free.value" by host span=10m
+      | timechart span=10m $statsfunc$(_value) by host
+      | foreach * [eval <<FIELD>>=round('<<FIELD>>'/1024/1024,2)]
+      ]]>
+</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -110,7 +138,7 @@
         <option name="charting.axisY2.enabled">0</option>
         <option name="charting.axisY2.scale">inherit</option>
         <option name="charting.chart">line</option>
-        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
         <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
         <option name="charting.chart.stackMode">default</option>
         <option name="charting.chart.style">shiny</option>
@@ -124,10 +152,20 @@
       <table>
         <title>Memory Free by Host (Top 15)</title>
         <search>
-          <query>`collectd_index` $hostmultiselect$ object=memory metric="memory-free" 
+          <query>
+<!--
+`collectd_index` $hostmultiselect$ object=memory metric="memory-free" 
 | stats avg(value) AS Average max(value) AS Maximum BY host 
 | sort 15 -Maximum 
-| eval Average = `format_bytes(Average)`, Maximum = `format_bytes(Maximum)`</query>
+| eval Average = `format_bytes(Average)`, Maximum = `format_bytes(Maximum)`
+-->
+
+<![CDATA[
+        | mstats avg(_value) as Avg max(_value) as Max where `collectd_index` $hostmultiselect$ metric_name="memory.free.value" by host
+      | sort 15 -Max 
+      | eval Avg = `format_bytes(Avg)`, Max = `format_bytes(Max)`
+]]>
+</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -144,9 +182,20 @@
       <chart>
         <title>Memory Cached by Host (Top 15)</title>
         <search>
-          <query>`collectd_index` $hostmultiselect$ object=memory metric="memory-cached" 
+          <query>
+<!--
+`collectd_index` $hostmultiselect$ object=memory metric="memory-cached" 
 | eval mbytes=((value/1024)/1024) 
-| timechart $statsfunc$(mbytes) BY host useother=f limit=15</query>
+| timechart $statsfunc$(mbytes) BY host useother=f limit=15
+-->
+
+      <![CDATA[
+      | mstats prestats=t $statsfunc$(_value) where `collectd_index` $hostmultiselect$ metric_name="memory.cached.value" by host span=10m
+      | timechart span=10m $statsfunc$(_value) by host
+      | foreach * [eval <<FIELD>>=round('<<FIELD>>'/1024/1024,2)]
+      ]]>
+
+</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -162,7 +211,7 @@
         <option name="charting.axisY2.enabled">0</option>
         <option name="charting.axisY2.scale">inherit</option>
         <option name="charting.chart">line</option>
-        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
         <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
         <option name="charting.chart.stackMode">default</option>
         <option name="charting.chart.style">shiny</option>
@@ -176,10 +225,20 @@
       <table>
         <title>Memory Cached by Host (Top 15)</title>
         <search>
-          <query>`collectd_index` $hostmultiselect$ object=memory metric="memory-cached" 
+          <query>
+<!-->
+`collectd_index` $hostmultiselect$ object=memory metric="memory-cached" 
 | stats avg(value) AS Average max(value) AS Maximum BY host 
 | sort 15 -Maximum 
-| eval Average = `format_bytes(Average)`, Maximum = `format_bytes(Maximum)`</query>
+| eval Average = `format_bytes(Average)`, Maximum = `format_bytes(Maximum)`
+-->
+
+<![CDATA[
+        | mstats avg(_value) as Avg max(_value) as Max where `collectd_index` $hostmultiselect$ metric_name="memory.cached.value" by host
+      | sort 15 -Max 
+      | eval Avg = `format_bytes(Avg)`, Max = `format_bytes(Max)`
+]]>
+          </query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -196,9 +255,20 @@
       <chart>
         <title>Memory Buffered by Host (Top 15)</title>
         <search>
-          <query>`collectd_index` $hostmultiselect$ object=memory metric="memory-buffered" 
+          <query>
+<!--            
+`collectd_index` $hostmultiselect$ object=memory metric="memory-buffered" 
 | eval mbytes=((value/1024)/1024) 
-| timechart $statsfunc$(mbytes) BY host useother=f limit=15</query>
+| timechart $statsfunc$(mbytes) BY host useother=f limit=15
+-->
+
+      <![CDATA[
+      | mstats prestats=t $statsfunc$(_value) where `collectd_index` $hostmultiselect$ metric_name="memory.buffered.value" by host span=10m
+      | timechart span=10m $statsfunc$(_value) by host
+      | foreach * [eval <<FIELD>>=round('<<FIELD>>'/1024/1024,2)]
+      ]]>
+
+</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -214,7 +284,7 @@
         <option name="charting.axisY2.enabled">0</option>
         <option name="charting.axisY2.scale">inherit</option>
         <option name="charting.chart">line</option>
-        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
         <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
         <option name="charting.chart.stackMode">default</option>
         <option name="charting.chart.style">shiny</option>
@@ -228,10 +298,19 @@
       <table>
         <title>Memory Buffered by Host (Top 15)</title>
         <search>
-          <query>`collectd_index` $hostmultiselect$ object=memory metric="memory-buffered" 
+          <query>
+<!--`collectd_index` $hostmultiselect$ object=memory metric="memory-buffered" 
 | stats avg(value) AS Average max(value) AS Maximum BY host 
 | sort 15 -Maximum
-| eval Average=`format_bytes(Average)`, Maximum=`format_bytes(Maximum)`</query>
+| eval Average=`format_bytes(Average)`, Maximum=`format_bytes(Maximum)`
+-->
+
+<![CDATA[
+        | mstats avg(_value) as Avg max(_value) as Max where `collectd_index` $hostmultiselect$ metric_name="memory.buffered.value" by host
+      | sort 15 -Max 
+      | eval Avg = `format_bytes(Avg)`, Max = `format_bytes(Max)`
+]]>
+</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -248,9 +327,19 @@
       <chart>
         <title>Swap Used by Host (Top 15)</title>
         <search>
-          <query>`collectd_index` $hostmultiselect$ object=swap metric="swap-used" 
+          <query>
+<!--`collectd_index` $hostmultiselect$ object=swap metric="swap-used" 
 | eval mbytes=((value/1024)/1024) 
-| timechart $statsfunc$(mbytes) BY host useother=f limit=15</query>
+| timechart $statsfunc$(mbytes) BY host useother=f limit=15-->
+
+      <![CDATA[
+      | mstats prestats=t $statsfunc$(_value) where `collectd_index` $hostmultiselect$ metric_name="swap.used.value" by host span=10m
+      | timechart span=10m $statsfunc$(_value) by host
+      | foreach * [eval <<FIELD>>=round('<<FIELD>>'/1024/1024,2)]
+      ]]>
+
+
+</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -266,7 +355,7 @@
         <option name="charting.axisY2.enabled">0</option>
         <option name="charting.axisY2.scale">inherit</option>
         <option name="charting.chart">line</option>
-        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
         <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
         <option name="charting.chart.stackMode">default</option>
         <option name="charting.chart.style">shiny</option>
@@ -280,10 +369,21 @@
       <table>
         <title>Swap Used by Host (Top 15)</title>
         <search>
-          <query>`collectd_index` $hostmultiselect$ object=swap metric="swap-used" 
+          <query>
+<!--
+`collectd_index` $hostmultiselect$ object=swap metric="swap-used" 
 | stats avg(value) AS Average max(value) AS Maximum BY host 
 | sort 15 -Maximum 
-| eval Average = `format_bytes(Average)`, Maximum = `format_bytes(Maximum)`</query>
+| eval Average = `format_bytes(Average)`, Maximum = `format_bytes(Maximum)`
+-->
+
+<![CDATA[
+      | mstats avg(_value) as Avg max(_value) as Max where `collectd_index` $hostmultiselect$ metric_name="swap.used.value" by host
+      | sort 15 -Max 
+      | eval Avg = `format_bytes(Avg)`, Max = `format_bytes(Max)`
+]]>
+
+</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>

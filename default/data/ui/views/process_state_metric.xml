@@ -4,9 +4,11 @@
     <input type="dropdown" searchWhenChanged="true" token="hostselected">
       <label>Select Host:</label>
       <search>
-        <query>| metadata type=hosts `collectd_index` 
-| search totalCount&gt;0 
-| stats count BY host</query>
+        <query>
+      <![CDATA[
+      | mstats count where `collectd_index` metric_name=* by host | fields host | sort host
+      ]]>        
+        </query>
       </search>
       <fieldForLabel>host</fieldForLabel>
       <fieldForValue>host</fieldForValue>
@@ -22,11 +24,22 @@
   <row>
     <panel>
       <chart>
-        <title>Average Processes by State over Time</title>
+        <title>Maximum Processes by State over Time
+</title>
         <search>
-          <query>`collectd_index` host=$hostselected$ (ps_state_sleeping=* OR ps_state_blocked=* OR ps_state_running=* OR ps_state_zombies=*) 
+          <query>
+          <!--
+          `collectd_index` host=$hostselected$ (ps_state_sleeping=* OR ps_state_blocked=* OR ps_state_running=* OR ps_state_zombies=*) 
 | timechart avg(ps_state_sleeping) AS Sleeping max(ps_state_running) AS Running max(ps_state_blocked) AS Blocked max(ps_state_zombies) AS Zombies 
-| eval Running=round(Running), Sleeping=round(Sleeping), Blocked=round(Blocked), Zombies=round(Zombies)</query>
+| eval Running=round(Running), Sleeping=round(Sleeping), Blocked=round(Blocked), Zombies=round(Zombies)
+-->
+
+<![CDATA[
+      | mstats prestats=t max(_value)   where `collectd_index` host=$hostselected$ metric_name="processes.ps_state.sleeping.value" OR metric_name="processes.ps_state.running.value" OR metric_name="processes.ps_state.blocked.value" OR metric_name="processes.ps_state.zombies.value" by metric_name span=10m 
+      | timechart span=10m max(_value) by metric_name
+]]>
+
+          </query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -52,21 +65,6 @@
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">right</option>
       </chart>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <table>
-        <title>Average Processes by State Over Time</title>
-        <search>
-          <query>`collectd_index` host=$hostselected$ (ps_state_sleeping=* OR ps_state_blocked=* OR ps_state_running=* OR ps_state_zombies=*) 
-| timechart max(ps_state_sleeping) AS Sleeping max(ps_state_running) AS Running max(ps_state_blocked) AS Blocked max(ps_state_zombies) AS Zombies BY host 
-| eval Running=round(Running), Sleeping=round(Sleeping), Blocked=round(Blocked), Zombies=round(Zombies)</query>
-          <earliest>$earliest$</earliest>
-          <latest>$latest$</latest>
-        </search>
-        <option name="drilldown">none</option>
-      </table>
     </panel>
   </row>
 </form>
