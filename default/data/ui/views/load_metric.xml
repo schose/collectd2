@@ -5,7 +5,8 @@
       <label>Select Hosts:</label>
       <default>*</default>
       <search>
-        <query><![CDATA[
+        <query>
+          <![CDATA[
       | mstats count where `collectd_index` metric_name=* by host | fields host | sort host
       ]]>        
         </query>
@@ -18,6 +19,10 @@
       <suffix>)</suffix>
       <fieldForLabel>host</fieldForLabel>
       <fieldForValue>host</fieldForValue>
+    </input>
+    <input type="text" token="span">
+      <label>span</label>
+      <default>5m</default>
     </input>
     <input type="dropdown" token="statsfunc" searchWhenChanged="true">
       <label>Statistical Function</label>
@@ -41,12 +46,12 @@
       <chart>
         <title>1 Minute Load by Host (Top 15)</title>
         <search>
-<!--          <query>`collectd_index` $hostmultiselect$ object=load metric="load.shortterm" 
+          <!--          <query>`collectd_index` $hostmultiselect$ object=load metric="load.shortterm" 
 | timechart $statsfunc$(value) BY host useother=f limit=15</query>-->
           <query>
           <![CDATA[
-          | mstats prestats=t $statsfunc$(_value) where $hostmultiselect$ `collectd_index` metric_name=load.shortterm by host span=10m 
-          | timechart $statsfunc$(_value) span=10m  useother=f limit=15 by host
+          | mstats prestats=t $statsfunc$(_value) where $hostmultiselect$ `collectd_index` metric_name=load.shortterm by host span=$span$ 
+          | timechart $statsfunc$(_value) span=$span$  useother=f limit=15 by host
           ]]>
           </query>
           <earliest>$earliest$</earliest>
@@ -77,7 +82,7 @@
       <table>
         <title>1 Minute Load by Host (Top 15)</title>
         <search>
-        <query>
+          <query>
         <!--
         `collectd_index` $hostmultiselect$ object=load  metric="load.shortterm" 
         | stats avg(value) AS AvgLoad max(value) AS MaxLoad BY host 
@@ -110,8 +115,8 @@
         <search>
           <query>
           <![CDATA[
-          | mstats prestats=t $statsfunc$(_value) where $hostmultiselect$ index=collectd metric_name=load.midterm by host span=10m 
-          | timechart $statsfunc$(_value) span=10m  useother=f limit=15 by host
+          | mstats prestats=t $statsfunc$(_value) where $hostmultiselect$ `collectd_index` metric_name=load.midterm by host span=$span$ 
+          | timechart $statsfunc$(_value) span=$span$  useother=f limit=15 by host
           ]]>
           </query>
           <earliest>$earliest$</earliest>
@@ -176,8 +181,8 @@
           <!--`collectd_index` $hostmultiselect$ object=load metric="load.longterm" 
 | timechart $statsfunc$(value) BY host useother=f limit=15-->
           <![CDATA[
-          | mstats prestats=t $statsfunc$(_value) where $hostmultiselect$ index=collectd metric_name=load.longterm by host span=10m 
-          | timechart $statsfunc$(_value) span=10m  useother=f limit=15 by host
+          | mstats prestats=t $statsfunc$(_value) where $hostmultiselect$ `collectd_index` metric_name=load.longterm by host span=$span$ 
+          | timechart $statsfunc$(_value) span=$span$  useother=f limit=15 by host
           ]]>
       </query>
           <earliest>$earliest$</earliest>

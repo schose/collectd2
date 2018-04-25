@@ -20,6 +20,10 @@
       <fieldForLabel>host</fieldForLabel>
       <fieldForValue>host</fieldForValue>
     </input>
+    <input type="text" token="span">
+      <label>span</label>
+      <default>5m</default>
+    </input>
     <input type="dropdown" token="statsfunc" searchWhenChanged="true">
       <label>Statistical Function</label>
       <choice value="min">Minimum</choice>
