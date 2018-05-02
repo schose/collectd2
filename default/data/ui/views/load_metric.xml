@@ -46,11 +46,9 @@
       <chart>
         <title>1 Minute Load by Host (Top 15)</title>
         <search>
-          <!--          <query>`collectd_index` $hostmultiselect$ object=load metric="load.shortterm" 
-| timechart $statsfunc$(value) BY host useother=f limit=15</query>-->
           <query>
           <![CDATA[
-          | mstats prestats=t $statsfunc$(_value) where $hostmultiselect$ `collectd_index` metric_name=load.shortterm by host span=$span$ 
+          | mstats prestats=t $statsfunc$(_value) where $hostmultiselect$ `collectd_index` metric_name=load*shortterm by host span=$span$ 
           | timechart $statsfunc$(_value) span=$span$  useother=f limit=15 by host
           ]]>
           </query>
@@ -91,7 +89,7 @@
         | table host AvgLoad MaxLoad
         -->
         <![CDATA[
-        | mstats avg(_value) as AvgLoad max(_value) as MaxLoad WHERE $hostmultiselect$ `collectd_index` metric_name=load.shortterm by host
+        | mstats avg(_value) as AvgLoad max(_value) as MaxLoad WHERE $hostmultiselect$ `collectd_index` metric_name=load*shortterm by host
         | eval AvgLoad =round(AvgLoad ,2), MaxLoad =round(MaxLoad ,2) 
         | sort 15 MaxLoad
         | table host AvgLoad MaxLoad
@@ -115,7 +113,7 @@
         <search>
           <query>
           <![CDATA[
-          | mstats prestats=t $statsfunc$(_value) where $hostmultiselect$ `collectd_index` metric_name=load.midterm by host span=$span$ 
+          | mstats prestats=t $statsfunc$(_value) where $hostmultiselect$ `collectd_index` metric_name=load*midterm by host span=$span$ 
           | timechart $statsfunc$(_value) span=$span$  useother=f limit=15 by host
           ]]>
           </query>
@@ -155,7 +153,7 @@
 | table host AvgLoad MaxLoad
 -->
         <![CDATA[
-        | mstats avg(_value) as AvgLoad max(_value) as MaxLoad WHERE $hostmultiselect$ `collectd_index` metric_name=load.midterm by host
+        | mstats avg(_value) as AvgLoad max(_value) as MaxLoad WHERE $hostmultiselect$ `collectd_index` metric_name=load*midterm by host
         | eval AvgLoad =round(AvgLoad ,2), MaxLoad =round(MaxLoad ,2) 
         | sort 15 MaxLoad
         | table host AvgLoad MaxLoad
@@ -181,7 +179,7 @@
           <!--`collectd_index` $hostmultiselect$ object=load metric="load.longterm" 
 | timechart $statsfunc$(value) BY host useother=f limit=15-->
           <![CDATA[
-          | mstats prestats=t $statsfunc$(_value) where $hostmultiselect$ `collectd_index` metric_name=load.longterm by host span=$span$ 
+          | mstats prestats=t $statsfunc$(_value) where $hostmultiselect$ `collectd_index` metric_name=load*longterm by host span=$span$ 
           | timechart $statsfunc$(_value) span=$span$  useother=f limit=15 by host
           ]]>
       </query>
@@ -221,7 +219,7 @@
 | table host AvgLoad MaxLoad
 -->
 <![CDATA[
-        | mstats avg(_value) as AvgLoad max(_value) as MaxLoad WHERE $hostmultiselect$ `collectd_index` metric_name=load.longterm by host
+        | mstats avg(_value) as AvgLoad max(_value) as MaxLoad WHERE $hostmultiselect$ `collectd_index` metric_name=load*longterm by host
         | eval AvgLoad =round(AvgLoad ,2), MaxLoad =round(MaxLoad ,2) 
         | sort 15 MaxLoad
         | table host AvgLoad MaxLoad

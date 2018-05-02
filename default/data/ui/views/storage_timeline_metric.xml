@@ -4,9 +4,11 @@
     <input type="dropdown" searchWhenChanged="true" token="hostselected">
       <label>Select Host:</label>
       <search>
-        <query>| metadata type=hosts `collectd_index` 
-| search totalCount&gt;0 
-| stats count BY host</query>
+        <query>        <![CDATA[
+      | mstats count where `collectd_index` metric_name=* by host | fields host | sort host
+      ]]>        
+
+</query>
       </search>
       <fieldForLabel>host</fieldForLabel>
       <fieldForValue>host</fieldForValue>
@@ -14,15 +16,19 @@
     <input type="dropdown" searchWhenChanged="true" token="partition">
       <label>Select Partition</label>
       <search>
-        <query>`collectd_index` object="df-*" (object!="df-dev" AND object!="df-run-shm" AND object!="df-run-lock" AND object!="df-run-shm" AND object!="df-run") 
-| stats count BY object 
-| eval object_new=replace(object,"df-","/"), object_new=replace(object_new,"-","/") 
-| sort object_new</query>
+        <query>| mstats count where `collectd_index` metric_name=df.df_complex.used.value by plugin_instance 
+| search plugin_instance!="dev" plugin_instance!="dev-shm" plugin_instance!="run-*" plugin_instance!="sys-*" plugin_instance!="docker-var-lib-docker*" plugin_instance!="*overlay2*" plugin_instance!="*containers*"
+| fields - count
+| rename plugin_instance as partition</query>
       </search>
       <default>*</default>
-      <choice value="*">All Partitions</choice>
-      <fieldForLabel>object_new</fieldForLabel>
-      <fieldForValue>object</fieldForValue>
+      <choice value="*">all</choice>
+      <fieldForLabel>partition</fieldForLabel>
+      <fieldForValue>partition</fieldForValue>
+    </input>
+    <input type="text" token="span">
+      <label>span</label>
+      <default>1h</default>
     </input>
     <input type="time" searchWhenChanged="true">
       <label>Select Time:</label>
@@ -37,7 +43,13 @@
       <chart>
         <title>Partitions over Time</title>
         <search>
-          <query>`collectd_index` metric="df_complex-used" host=$hostselected$ object=$partition$ |  eval valueMB=round(( ((value/1024) /1024)) / 1024,3), object=replace(object,"df-","/"), object=replace(object,"-","/") |  timechart latest(valueMB) BY object useother=f</query>
+          <query>
+ <![CDATA[
+| mstats prestats=t avg(_value) where `collectd_index` metric_name=df.df_complex.used.value host=$hostselected$ plugin_instance=$partition$ by plugin_instance span=$span$
+| search plugin_instance!="dev" plugin_instance!="dev-shm" plugin_instance!="run-*" plugin_instance!="sys-*" plugin_instance!="docker-var-lib-docker*" plugin_instance!="*overlay2*" plugin_instance!="*containers*"
+| timechart span=$span$ avg(_value) by plugin_instance
+]]>
+          </query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -70,14 +82,16 @@
       <table>
         <title>Partitions over Time</title>
         <search>
-          <query>`collectd_index` metric="df_complex-used" host=$hostselected$ object=$partition$ 
-| eval valueMB=`format_bytes(value)`, object=replace(object,"df-","/"), object=replace(object,"-","/") 
-| timechart latest(valueMB) BY object useother=f</query>
+          <query>| mstats prestats=t latest(_value) where `collectd_index` metric_name=df.df_complex.used.value host=kvm01* plugin_instance=* by plugin_instance span=$span$
+| timechart useother=f span=$span$ latest(_value) by plugin_instance
+| foreach * 
+[ eval &lt;&lt;FIELD&gt;&gt;=`format_bytes_new('&lt;&lt;FIELD&gt;&gt;')`]</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
         <option name="rowNumbers">false</option>
         <option name="wrap">true</option>
       </table>

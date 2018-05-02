@@ -24,19 +24,20 @@
       <label>span</label>
       <default>5m</default>
     </input>
-    <input type="dropdown" searchWhenChanged="true" token="object">
-      <label>Select Object</label>
+    <input type="dropdown" searchWhenChanged="true" token="cpucore">
+      <label>Cpucore</label>
       <default>*</default>
-      <choice value="*">Aggregate</choice>
+      <choice value="*">All</choice>
       <search>
-        <query>`collectd_index` $hostmultiselect$ object=cpu-* 
-| stats count BY object
-| fields - count</query>
+        <query>| mstats max(_value) as deleteme where `collectd_index` metric_name=cpu.idle.value ($hostmultiselect$) by plugin_instance 
+| fields - deleteme 
+| sort plugin_instance
+| rename plugin_instance as cpucore</query>
         <earliest>-7d@h</earliest>
         <latest>now</latest>
       </search>
-      <fieldForLabel>object</fieldForLabel>
-      <fieldForValue>object</fieldForValue>
+      <fieldForLabel>cpucore</fieldForLabel>
+      <fieldForValue>cpucore</fieldForValue>
     </input>
     <input type="dropdown" token="statsfunc" searchWhenChanged="true">
       <label>Statistical Function</label>

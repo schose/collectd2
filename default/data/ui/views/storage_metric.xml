@@ -1,19 +1,15 @@
 <form>
   <label>Storage Trends</label>
-  <search id="baseSearch">
-    <query>`collectd_index` object="df-*" (df_complex_used=* OR df_complex_free=* OR df_complex_reserved=*) 
-    | stats earliest(df_complex_used) AS lastused latest(df_complex_used) AS used latest(df_complex_free) AS free latest(df_complex_reserved) AS reserved BY host object</query>
-  </search>
-  <fieldset submitButton="false" autoRun="true">
+  <fieldset submitButton="true" autoRun="true">
     <input type="multiselect" searchWhenChanged="true" token="hostmultiselect">
       <label>Select Hosts:</label>
       <default>*</default>
       <search>
-        <query>| metadata type=hosts `collectd_index` 
-| search $hostmultiselect$ totalCount&gt;0 
-| stats count BY "host" 
-| fields - count
-| sort "host"</query>
+        <query>
+        <![CDATA[
+      | mstats count where `collectd_index` metric_name=* by host | fields host | sort host
+      ]]>        
+        </query>
       </search>
       <choice value="*">all</choice>
       <prefix>(</prefix>
@@ -27,16 +23,15 @@
     <input type="dropdown" searchWhenChanged="true" token="partition">
       <label>Select Partition</label>
       <search>
-        <query>`collectd_index` object="df-*" (object!="df-dev" AND object!="df-run-shm" AND object!="df-run-lock" AND object!="df-run-shm" AND object!="df-run")
-| stats count BY object 
-| eval object_new=replace(object,"df-","/"), object_new=replace(object_new,"-","/") 
-| sort "object_new" 
-| table "object_new" object</query>
+        <query>| mstats count where `collectd_index` metric_name=df.df_complex.used.value by plugin_instance 
+| search plugin_instance!="dev" plugin_instance!="dev-shm" plugin_instance!="run-*" plugin_instance!="sys-*" plugin_instance!="docker-var-lib-docker*" plugin_instance!="*overlay2*" plugin_instance!="*containers*"
+| fields - count
+| rename plugin_instance as partition</query>
       </search>
       <default>*</default>
       <choice value="*">all</choice>
-      <fieldForLabel>object_new</fieldForLabel>
-      <fieldForValue>object</fieldForValue>
+      <fieldForLabel>partition</fieldForLabel>
+      <fieldForValue>partition</fieldForValue>
     </input>
     <input type="time" searchWhenChanged="true">
       <label>Select Time:</label>
@@ -50,24 +45,15 @@
     <panel>
       <chart>
         <title>Storage Increase by Host in GB</title>
-        <search base="baseSearch">
-          <query>| eval deltaused = used-lastused 
-| stats sum(deltaused) AS GB BY host 
-| eval GB=round(GB/1024/1024/1024,2) 
-| sort -GB 
-| search $hostmultiselect$</query>
+        <search>
+          <query>| mstats earliest(_value) as ev latest(_value) as lv where `collectd_index` metric_name=df.df_complex.used.value plugin_instance=$partition$ $hostmultiselect$ by host plugin_instance
+| eval delta=lv-ev
+| stats sum(delta) as delta by host
+| eval deltaGB=round(delta/1024/1024/1024,2)
+| sort - deltaGB
+| table host deltaGB
+        </query>
         </search>
-        <!--
-funktioniert:
-`collectd_index` (metric="df_complex-used" OR metric="df_complex-free" OR metric="df_complex-reserved") |
-stats last(df_complex_used) as lastused latest(df_complex_used) as used latest(df_complex_free) as free latest(df_complex_reserved) as reserved by host object |
-eval deltaused = used-lastused | 
-eval full=free+used | 
-search host=* |
-stats sum(deltaused) as GB by host | 
-eval GB=round(GB/1024/1024/1024,2) |
-sort -GB
--->
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
         <option name="charting.axisTitleX.visibility">visible</option>
@@ -123,15 +109,15 @@ sort -GB
     <panel>
       <table>
         <title>Storage Changes by Partition</title>
-        <search base="baseSearch">
-          <query>| search $hostmultiselect$ object="$partition$" 
-| eval fullsize=free+used+reserved, freeout=`format_bytes_new(free)`, usedout=`format_bytes_new(used )`, reservedout=`format_bytes_new(reserved)`, fullout=`format_bytes_new(fullsize)`, percentused = (used/fullsize)*100, percentused = round(percentused), deltaused = used-lastused 
-| search deltaused!=0 
-| eval partitionorg = object, partition=replace(object,"df-","/"), partition=replace(partition,"-","/") 
-| sort -deltaused
-| eval delta=`format_bytes_new(deltaused)` 
-| rename delta AS storageincrease usedout AS usage freeout AS free fullout AS size 
-| table host partition storageincrease size usage freeout percentused partitionorg</query>
+        <search>
+          <query>| mstats earliest(_value) as ev latest(_value) as lv where `collectd_index` metric_name=df.df_complex.used.value plugin_instance=$partition$ $hostmultiselect$ by host metric_name plugin_instance 
+| search ev!=0 OR lv!=0 
+| eval delta=lv-ev 
+| eval deltaGB=round(delta/1024/1024/1024,2) 
+| table host plugin_instance deltaGB 
+| rename plugin_instance as partition 
+| sort - deltaGB
+</query>
         </search>
         <option name="count">10</option>
         <option name="dataOverlayMode">none</option>
@@ -203,12 +189,23 @@ sort -GB
       <table>
         <title>fullest volumes in pct</title>
         <search>
-          <query>`collectd_index` $hostmultiselect$ $envmultiselect$ object="df-*" (df_complex_free=* OR df_complex_used=* OR df_complex_reserved=*) object="$partition$"
-| stats latest(df_complex_free) AS free latest(df_complex_used) AS used latest(df_complex_reserved) AS reserved BY host object 
-| eval full=free+used, percentused = (used/full)*100, percentused = round(percentused), pct = tostring(percentused . "%"), delta=`format_bytes_new(delta)`, full =`format_bytes_new(full )`, used =`format_bytes_new(used )`, free=`format_bytes_new(free)`, partition=replace(object,"df-","/"), partition=replace(partition,"-","/") 
-| rename full AS size 
-| sort -percentused 
-| table host partition pct size used free</query>
+          <query>
+<![CDATA[        
+| mstats latest(_value) as wert where `collectd_index` metric_name=df.df_complex.*.value $hostmultiselect$ plugin_instance=$partition$ by host plugin_instance metric_name 
+| eval partition=host."#".plugin_instance
+| xyseries partition metric_name wert
+| convert num(df.df_complex.free.value) as free, num(df.df_complex.used.value) as used
+| eval pctused=round((used/(used+free))*100,2)
+| sort - pctused
+| fields - df*
+| eval free=`format_bytes(free)`
+| eval used=`format_bytes(used)`
+| eval tmpfields=split(partition,"#")
+| eval host=mvindex(tmpfields,0)
+| eval partition=mvindex(tmpfields,1)
+| table host partition used free pctused
+]]>
+</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
