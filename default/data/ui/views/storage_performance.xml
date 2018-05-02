@@ -5,11 +5,13 @@
       <label>Select Hosts:</label>
       <default>*</default>
       <search>
-        <query>| metadata type=hosts `collectd_index` 
-| search totalCount&gt;0 
-| stats count BY host</query>
+        <query>
+        <![CDATA[
+      | mstats count where `collectd_index` metric_name=* by host | fields host | sort host
+      ]]>        
+        </query>
       </search>
-      <choice value="*">All Hosts</choice>
+      <choice value="*">all</choice>
       <prefix>(</prefix>
       <valuePrefix>host ="</valuePrefix>
       <valueSuffix>"</valueSuffix>
@@ -18,25 +20,19 @@
       <fieldForLabel>host</fieldForLabel>
       <fieldForValue>host</fieldForValue>
     </input>
-    <input type="dropdown" searchWhenChanged="true" token="operation">
-      <label>Select Metric:</label>
-      <selectFirstChoice>true</selectFirstChoice>
-      <choice value="ops">I/O Per Second</choice>
-      <choice value="time">Latency</choice>
-      <choice value="octets">Volume</choice>
-    </input>
     <input type="dropdown" searchWhenChanged="true" token="disk">
       <label>Select Disk</label>
       <search>
-        <query>`collectd_index` (metric=disk_ops.read OR metric=disk_ops.write) 
-| stats count BY object
-| eval object_new=replace(object,"disk-","") 
-| table object object_new</query>
+        <query>| mstats count where `collectd_index` metric_name=disk.disk_ops.read $hostmultiselect$ by plugin_instance | rename plugin_instance as disk</query>
       </search>
       <default>*</default>
       <choice value="*">All Disks</choice>
-      <fieldForLabel>object_new</fieldForLabel>
-      <fieldForValue>object</fieldForValue>
+      <fieldForLabel>disk</fieldForLabel>
+      <fieldForValue>disk</fieldForValue>
+    </input>
+    <input type="text" token="span">
+      <label>span</label>
+      <default>5m</default>
     </input>
     <input type="time" searchWhenChanged="true">
       <label>Select Time:</label>
@@ -49,10 +45,10 @@
   <row>
     <panel>
       <chart>
-        <title>$operation$ Read/Write ratio</title>
+        <title>iops Read/Write ratio</title>
         <search>
-          <query>`collectd_index` (metric=disk_$operation$.read OR metric=disk_$operation$.write) object=$disk$ $hostmultiselect$ 
-| timechart max(disk_$operation$_read) AS Read max(disk_$operation$_write) AS Write BY metric</query>
+          <query>| mstats prestats=t sum(_value) where `collectd_index` $hostmultiselect$ plugin_instance=$disk$ metric_name=disk.disk_ops.write OR metric_name=disk.disk_ops.read span=$span$ by metric_name
+| timechart span=$span$ sum(_value) by metric_name</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -77,19 +73,23 @@
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">bottom</option>
+        <option name="refresh.display">progressbar</option>
       </chart>
     </panel>
     <panel>
       <table>
-        <title>Average $operation$ by Host</title>
+        <title>Total iops by Host</title>
         <search>
-          <query>`collectd_index` (metric="disk_$operation$.read" OR metric="disk_$operation$.write") object=$disk$ $hostmultiselect$  
-| stats avg(disk_$operation$_read) AS Read avg(disk_$operation$_write) AS Write BY host 
-| eval Total=Read+Write 
-| sort -Total 
-| eval Total=round(Total,2) 
-| eval Read=round(Read,2) 
-| eval Write=round(Write,2)</query>
+          <query>| mstats sum(_value) as value where `collectd_index` metric_name=disk.disk_ops.write OR metric_name=disk.disk_ops.read $hostmultiselect$ span=$span$ plugin_instance=$disk$ by plugin_instance metric_name
+| stats sum(value) as sumops by plugin_instance metric_name
+| xyseries plugin_instance metric_name sumops
+| convert num(disk.disk_ops.read) as readops, num(disk.disk_ops.write) as writeops
+| eval readops=round(readops)
+| eval writeops=round(writeops)
+| eval totalops=readops+writeops
+| rename plugin_instance as device
+| fields device totalops readops writeops
+| sort - totalops</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -103,31 +103,33 @@
   </row>
   <row>
     <panel>
-      <table>
-        <title>Top Average Write $operation$ by Device</title>
+      <chart>
+        <title>pending disk operations by Device</title>
         <search>
-          <query>`collectd_index` metric="disk_$operation$.write" object=$disk$ $hostmultiselect$
-| stats avg(value) AS value BY host object 
-| sort -value 
-| eval value=round(value,2)</query>
+          <query>| mstats avg(_value) as value where `collectd_index` metric_name=disk.pending_operations.value $hostmultiselect$ plugin_instance=$disk$ span=$span$ by host</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
-        <option name="count">10</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">none</option>
-        <option name="rowNumbers">false</option>
-        <option name="wrap">true</option>
-      </table>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
     </panel>
     <panel>
       <table>
-        <title>Top Average Read $operation$ by Device</title>
+        <title>Total iops by Device</title>
         <search>
-          <query>`collectd_index` metric="disk_$operation$.read" object=$disk$ $hostmultiselect$
-| stats avg(value) AS value BY host object 
-| sort -value 
-| eval value=round(value,2)</query>
+          <query>| mstats sum(_value) as value where `collectd_index` metric_name=disk.disk_ops.write OR metric_name=disk.disk_ops.read $hostmultiselect$ span=$span$ plugin_instance=$disk$ by plugin_instance metric_name
+| stats sum(value) as sumops by plugin_instance metric_name
+| xyseries plugin_instance metric_name sumops
+| convert num(disk.disk_ops.read) as readops, num(disk.disk_ops.write) as writeops
+| eval readops=round(readops)
+| eval writeops=round(writeops)
+| eval totalops=readops+writeops
+| rename plugin_instance as device
+| fields device totalops readops writeops
+| sort - totalops</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>

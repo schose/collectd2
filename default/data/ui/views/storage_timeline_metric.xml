@@ -82,7 +82,7 @@
       <table>
         <title>Partitions over Time</title>
         <search>
-          <query>| mstats prestats=t latest(_value) where `collectd_index` metric_name=df.df_complex.used.value host=kvm01* plugin_instance=* by plugin_instance span=$span$
+          <query>| mstats prestats=t latest(_value) where `collectd_index` metric_name=df.df_complex.used.value host=$hostselected$ plugin_instance=* by plugin_instance span=$span$
 | timechart useother=f span=$span$ latest(_value) by plugin_instance
 | foreach * 
 [ eval &lt;&lt;FIELD&gt;&gt;=`format_bytes_new('&lt;&lt;FIELD&gt;&gt;')`]</query>
