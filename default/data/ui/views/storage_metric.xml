@@ -1,24 +1,40 @@
 <form>
   <label>Storage Trends</label>
   <fieldset submitButton="true" autoRun="true">
+    <input type="dropdown" token="hostgroup">
+      <label>hostgroup</label>
+      <default>*</default>
+      <fieldForLabel>hostgroup</fieldForLabel>
+      <fieldForValue>hosts</fieldForValue>
+      <search>
+        <query>| inputlookup hostgroups.csv</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+    </input>
     <input type="multiselect" searchWhenChanged="true" token="hostmultiselect">
       <label>Select Hosts:</label>
-      <default>*</default>
       <search>
-        <query>
-        <![CDATA[
-      | mstats count where `collectd_index` metric_name=* by host | fields host | sort host
-      ]]>        
-        </query>
+        <query>| mstats count where `collectd_index` metric_name=* 
+        [ | makeresults
+          | eval host="$hostgroup$"
+          | eval host=split(host,",")
+          | fields host ] 
+        by host
+        | append [ | makeresults | eval hoststr="all" | eval host="$hostgroup$" ]
+        | fields hoststr host 
+        | sort hoststr host</query>
+        <earliest>-7d@h</earliest>
+        <latest>now</latest>
       </search>
-      <choice value="*">all</choice>
       <prefix>(</prefix>
       <valuePrefix>host ="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
       <suffix>)</suffix>
-      <fieldForLabel>host</fieldForLabel>
+      <fieldForLabel>hoststr</fieldForLabel>
       <fieldForValue>host</fieldForValue>
+      <initialValue>*bwlab.loc*</initialValue>
     </input>
     <input type="dropdown" searchWhenChanged="true" token="partition">
       <label>Select Partition</label>
@@ -44,7 +60,7 @@
   <row>
     <panel>
       <chart>
-        <title>Storage Increase by Host in GB</title>
+        <title>Storage in-/decrease by Host in GB</title>
         <search>
           <query>| mstats earliest(_value) as ev latest(_value) as lv where `collectd_index` metric_name=df.df_complex.used.value plugin_instance=$partition$ $hostmultiselect$ by host plugin_instance
 | eval delta=lv-ev
@@ -71,38 +87,15 @@
         <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
         <option name="charting.chart.stackMode">default</option>
         <option name="charting.chart.style">shiny</option>
-        <option name="height">300</option>
         <option name="charting.drilldown">all</option>
-        <drilldown target="My New Window">
-          <link>storage_timeline_metric?form.hostselected=$click.value$</link>
-        </drilldown>
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">right</option>
-      </chart>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <table>
-        <title>Storage Increase by Host</title>
-        <search base="baseSearch">
-          <query>| eval deltaused = used-lastused, size=free+used
-| stats sum(deltaused) AS deltabytes sum(used) AS usedbytes sum(free) AS freebytes sum(reserved) AS reservedbytes BY host
-| sort -deltabytes
-| table host deltabytes usedbytes freebytes reservedbytes
-| eval deltabytes=`format_bytes(deltabytes)`, freebytes=`format_bytes(freebytes)`, usedbytes=`format_bytes(usedbytes)`, reservedbytes=`format_bytes(reservedbytes)`
-| search $hostmultiselect$</query>
-        </search>
-        <option name="count">10</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">row</option>
-        <option name="rowNumbers">false</option>
-        <option name="wrap">true</option>
+        <option name="height">300</option>
         <drilldown target="My New Window">
           <link>storage_timeline_metric?form.hostselected=$click.value$</link>
         </drilldown>
-      </table>
+      </chart>
     </panel>
   </row>
   <row>
@@ -132,57 +125,32 @@
   </row>
   <row>
     <panel>
-      <chart>
-        <title>Free vs. Used by Host in GB</title>
-        <search base="baseSearch">
-          <query>| search $hostmultiselect$ $envmultiselect$ object="$partition$" 
-| chart sum(used) AS totalused sum(free) AS totalfree sum(reserved) AS totalreserved BY host 
-| sort -totalused 
-| eval totalused=round(totalused/1024/1024/1024,2), totalfree=round(totalfree/1024/1024/1024,2), totalreserved=round(totalreserved/1024/1024/1024,2)</query>
-        </search>
-        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
-        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisTitleY2.visibility">visible</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.axisY2.enabled">false</option>
-        <option name="charting.axisY2.scale">inherit</option>
-        <option name="charting.chart">bar</option>
-        <option name="charting.chart.bubbleMaximumSize">50</option>
-        <option name="charting.chart.bubbleMinimumSize">10</option>
-        <option name="charting.chart.bubbleSizeBy">area</option>
-        <option name="charting.chart.nullValueMode">gaps</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">stacked</option>
-        <option name="charting.chart.style">shiny</option>
-        <option name="charting.drilldown">all</option>
-        <drilldown target="My New Window">
-          <link>storage_timeline_metric?form.hostselected=$click.value$</link>
-        </drilldown>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.placement">right</option>
-      </chart>
-    </panel>
-  </row>
-  <row>
-    <panel>
       <table>
-        <title>Average Space Used by Host and Partition</title>
+        <title>Space Used by Host and Partition</title>
         <search>
-          <query>`collectd_index` $hostmultiselect$ $envmultiselect$ metric="df_complex-used" object="$partition$" 
-| stats avg(value) AS bytes BY host object 
-| sort -bytes 
-| eval UsedMem = `format_bytes_new(bytes)`, Partition=replace(object,"df-","/") 
-| table host Partition UsedMem</query>
+          <query>| mstats latest(_value) as wert where `collectd_index` metric_name=df.df_complex.*.value $hostmultiselect$ plugin_instance=$partition$ by host plugin_instance metric_name 
+| eval partition=host."#".plugin_instance
+| xyseries partition metric_name wert
+| convert num(df.df_complex.free.value) as free, num(df.df_complex.used.value) as used
+| eval pctused=round((used/(used+free))*100,2)
+| sort - pctused
+| fields - df*
+| sort - used
+| eval free=`format_bytes(free)`
+| eval used=`format_bytes(used)`
+| eval tmpfields=split(partition,"#")
+| eval host=mvindex(tmpfields,0)
+| eval partition=mvindex(tmpfields,1)
+| table host partition used free pctused</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
         </search>
-        <option name="wrap">true</option>
-        <option name="rowNumbers">false</option>
+        <option name="count">10</option>
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">none</option>
-        <option name="count">10</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
       </table>
     </panel>
     <panel>

@@ -1,8 +1,8 @@
-<form script="custom_layout_width.js">
-  <label>Network Throughput and Errors</label>
+<form>
+  <label>Metric Explorer</label>
   <!-- errors -->
   <fieldset submitButton="false" autoRun="true">
-     <input type="dropdown" token="hostgroup">
+    <input type="dropdown" token="hostgroup">
       <label>hostgroup</label>
       <default>*</default>
       <fieldForLabel>hostgroup</fieldForLabel>
@@ -41,19 +41,41 @@
       <label>span</label>
       <default>5m</default>
     </input>
-
-   <input type="dropdown" searchWhenChanged="true" token="nic">
-      <label>Interface</label>
-      <default>*</default>
-      <choice value="*">All Interfaces</choice>
+    <input type="dropdown" searchWhenChanged="true" token="metric">
+      <label>metric</label>
       <search>
-        <query>| mstats count where metric_name=interface.if_packets.rx `collectd_index` $hostmultiselect$ by plugin_instance
-        | sort plugin_instance
-        </query>
+        <query>| mcatalog values(metric_name) as metrics where $hostmultiselect$ `collectd_index`
+| mvexpand metrics</query> 
+        <earliest>-7d@h</earliest>
+        <latest>now</latest>
       </search>
-      <initialValue>*</initialValue>
+      <fieldForLabel>metrics</fieldForLabel>
+      <fieldForValue>metrics</fieldForValue>
+    </input>
+    <input type="dropdown" searchWhenChanged="true" token="instance">
+      <label>instance</label>
+      <search>
+        <query>| mstats count as instances where $hostmultiselect$ metric_name=$metric$ `collectd_index` by plugin_instance
+| fields plugin_instance</query>
+        <earliest>-7d@h</earliest>
+        <latest>now</latest>
+      </search>
       <fieldForLabel>plugin_instance</fieldForLabel>
       <fieldForValue>plugin_instance</fieldForValue>
+      <choice value="*">all</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="dropdown" searchWhenChanged="true" token="statsfunc">
+      <label>Function</label>
+      <choice value="min">Minimum</choice>
+      <choice value="mean">Mean</choice>
+      <choice value="median">Median</choice>
+      <choice value="avg">Average</choice>
+      <choice value="max">Maximum</choice>
+      <choice value="sum">Sum</choice>
+      <default>avg</default>
+      <initialValue>avg</initialValue>
     </input>
     <input type="time" searchWhenChanged="true">
       <label>Select Time:</label>
@@ -66,15 +88,9 @@
   <row>
     <panel id="panel1_setWidth_67">
       <chart>
-        <title>Packet Throughput by Host</title>
+        <title>statsfunc $metric$ on $instance$ Throughput by Host</title>
         <search>
-          <query>| mstats sum(interface.if_packets.rx) as rx sum(interface.if_packets.tx) as tx where `collectd_index` $hostmultiselect$ plugin_instance=$nic$ by host plugin_instance span=$span$
-| eval rx=round(rx,2)
-| eval tx=round(tx,2)
-| eval total=rx+tx
-| eventstats sum(total) as hosttotal by _time host
-| timechart limit=20 span=$span$ avg(hosttotal) by host
-</query>
+          <query>| mstats $statsfunc$($metric$)  where `collectd_index` $hostmultiselect$ plugin_instance=$instance$ span=$span$</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -90,6 +106,7 @@
         <option name="charting.axisY2.scale">inherit</option>
         <option name="charting.chart">line</option>
         <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.overlayFields">sum(disk.disk_octets.write)</option>
         <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
         <option name="charting.chart.stackMode">default</option>
         <option name="charting.chart.style">shiny</option>
@@ -97,66 +114,8 @@
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">bottom</option>
+        <option name="refresh.display">progressbar</option>
       </chart>
-    </panel>
-    <panel id="panel1_setWidth_33">
-      <table>
-        <title>Packet by Host</title>
-        <search>
-          <query>| mstats sum(interface.if_packets.rx) as rx sum(interface.if_packets.tx) as tx where `collectd_index` $hostmultiselect$ plugin_instance=$nic$ by host  
-| eval rx=round(rx,2)
-| eval tx=round(tx,2)
-| eval total=rx+tx
-| sort - total
-</query>
-          <earliest>$earliest$</earliest>
-          <latest>$latest$</latest>
-        </search>
-        <option name="count">10</option>
-        <option name="drilldown">none</option>
-      </table>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <table>
-        <title>Packets by Host and Interface</title>
-        <search>
-          <query>
-| mstats sum(interface.if_packets.rx) as rx sum(interface.if_packets.tx) as tx where `collectd_index` $hostmultiselect$ plugin_instance=$nic$ by host plugin_instance
-| eval rx=round(rx,2)
-| eval tx=round(tx,2)
-| eval total=rx+tx
-| rename plugin_instance as interface
-| sort - total      
-            </query>
-          <earliest>$earliest$</earliest>
-          <latest>$latest$</latest>
-        </search>
-        <option name="count">10</option>
-        <option name="drilldown">none</option>
-      </table>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <table>
-        <title>Error by Host and Interface</title>
-        <search>
-          <query>
-| mstats sum(interface.if_errors.rx) as error_rx sum(interface.if_errors.tx) as error_tx where `collectd_index` $hostmultiselect$ plugin_instance=$nic$ by host plugin_instance
-| rename plugin_instance as interface
-| eval error_rx = round(error_rx,2)
-| eval error_tx = round(error_tx,2)
-| eval total_error = error_tx+error_rx
-| sort - total_error            
-          </query>
-          <earliest>$earliest$</earliest>
-          <latest>$latest$</latest>
-        </search>
-        <option name="count">10</option>
-        <option name="drilldown">none</option>
-      </table>
     </panel>
   </row>
 </form>

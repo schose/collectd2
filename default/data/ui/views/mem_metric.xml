@@ -1,24 +1,40 @@
 <form script="custom_layout_width.js">
   <label>Memory</label>
   <fieldset submitButton="false" autoRun="true">
+    <input type="dropdown" token="hostgroup">
+      <label>hostgroup</label>
+      <default>*</default>
+      <fieldForLabel>hostgroup</fieldForLabel>
+      <fieldForValue>hosts</fieldForValue>
+      <search>
+        <query>| inputlookup hostgroups.csv</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+    </input>
     <input type="multiselect" searchWhenChanged="true" token="hostmultiselect">
       <label>Select Hosts:</label>
-      <default>*</default>
       <search>
-        <query>
-      <![CDATA[
-      | mstats count where `collectd_index` metric_name=* by host | fields host | sort host
-      ]]>      
-        </query>
+        <query>| mstats count where `collectd_index` metric_name=* 
+        [ | makeresults
+          | eval host="$hostgroup$"
+          | eval host=split(host,",")
+          | fields host ] 
+        by host
+        | append [ | makeresults | eval hoststr="all" | eval host="$hostgroup$" ]
+        | fields hoststr host 
+        | sort hoststr host</query>
+        <earliest>-7d@h</earliest>
+        <latest>now</latest>
       </search>
-      <choice value="*">All Hosts</choice>
       <prefix>(</prefix>
       <valuePrefix>host ="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
       <suffix>)</suffix>
-      <fieldForLabel>host</fieldForLabel>
+      <fieldForLabel>hoststr</fieldForLabel>
       <fieldForValue>host</fieldForValue>
+      <initialValue>*bwlab.loc*</initialValue>
     </input>
     <input type="text" token="span">
       <label>span</label>
