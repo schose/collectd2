@@ -4,7 +4,7 @@
     <panel>
       <html>
       <b>
-        <h2>collectd App for Splunk Enterprise by Nexinto</h2>
+        <h2>collectd2 App for Splunk Enterprise</h2>
       </b>
       <br/>
         
@@ -12,13 +12,12 @@
 
       <br/>
         
-      The "collectd App for Splunk Enterprise" analyzes your OS performance and storage data. 
+      The "collectd2 App for Splunk Enterprise" analyzes your collectd metrics.
         <br/>
 Those statistics can then be used to find current performance bottlenecks and predict future system load. 
-It uses the collectd daemon and the graphite plugin to gather data from client machines. 
-      
-        
+It uses the collectd daemon and http plugin on client site and Splunk HTTP Event Collector on server site to gather data from client machines. 
       <br/>
+The application is a complete reimplementation of "collectd App for Splunk Enterprise by Nexinto GmbH" and is using Metric Indexes introduced in Splunk Enterprise 7.0.
 
      <hr/>
 Features:
@@ -30,7 +29,8 @@ Features:
 		<ul><li>Storage Timeline (Host and Partition usage over time)</li></ul>
 		<ul><li>Storage Performance (IOPs, Latency, Volume) by Host and Partition</li></ul>
 		<ul><li>Process State (running, sleeping, blocked and zombie processes) over time</li></ul>
-		<ul><li>Network Throughput and Errors (Packets/s) by Host and Interface</li></ul>        
+		<ul><li>Network Throughput and Errors (Packets/s) by Host and Interface</li></ul>   
+		<ul><li>Metric Explorer for custom Metrics</li></ul> 
 
 
   <br/><br/>
