@@ -15,22 +15,22 @@
       The "collectd2 App for Splunk Enterprise" analyzes your collectd metrics.
         <br/>
 Those statistics can then be used to find current performance bottlenecks and predict future system load. 
-It uses the collectd daemon and http plugin on client site and Splunk HTTP Event Collector on server site to gather data from client machines. 
+It uses the collectd daemon and http plugin on the client side and the Splunk HTTP Event Collector on the server side to gather data from client machines. 
       <br/>
 The application is a complete reimplementation of "collectd App for Splunk Enterprise by Nexinto GmbH" and is using Metric Indexes introduced in Splunk Enterprise 7.0.
 
      <hr/>
 Features:
         
-        <ul><li>Analyze System Load</li></ul>
-        <ul><li>Analyze CPU Usage (overall and per core)</li></ul>
-        <ul><li>Memory Usage (used, cached, buffered, swapped, free memory)</li></ul>
-		<ul><li>Storage Trending (in-/decrease per host and per partition)</li></ul>
-		<ul><li>Storage Timeline (Host and Partition usage over time)</li></ul>
-		<ul><li>Storage Performance (IOPs, Latency, Volume) by Host and Partition</li></ul>
-		<ul><li>Process State (running, sleeping, blocked and zombie processes) over time</li></ul>
-		<ul><li>Network Throughput and Errors (Packets/s) by Host and Interface</li></ul>   
-		<ul><li>Metric Explorer for custom Metrics</li></ul> 
+        <ul><li>Analyze system load</li></ul>
+        <ul><li>Analyze CPU usage (overall and per core)</li></ul>
+        <ul><li>Memory usage (used, cached, buffered, swapped, free memory)</li></ul>
+		<ul><li>Storage trending (in-/decrease per host and per partition)</li></ul>
+		<ul><li>Storage timeline (Host and Partition usage over time)</li></ul>
+		<ul><li>Storage performance (IOPs, Latency, Volume) by host and partition</li></ul>
+		<ul><li>Process state (running, sleeping, blocked and zombie processes) over time</li></ul>
+		<ul><li>Network throughput and errors (packets/s) by host and interface</li></ul>   
+		<ul><li>Metric explorer for custom metrics</li></ul> 
 
 
   <br/><br/>
@@ -39,7 +39,7 @@ Features:
   
   <h4>Server Side</h4>
         
-On your Splunk enviroment you need to have Splunk HTTP Event Collector (HEC) up and running. 
+In your Splunk enviroment you need to have Splunk HTTP Event Collector (HEC) up and running. 
 
 Here is a simple setup for lab enviroments
 
@@ -66,7 +66,7 @@ index = collectd_metrics
 indexes = collectd_metrics
 </pre>
 
-Configure a metrics index in indexes.conf. Here name is collectd_metrics.
+Configure a metrics index in indexes.conf. Here its name is collectd_metrics.
 
 <pre>
 [collectd_metrics]
@@ -89,7 +89,7 @@ Collectd has to be set up on every client machine. There is no universal forward
         
 <br/><br/>        
 You need to load the following plugins: cpu, df, disk, interface, load, memory, processes, swap and write_http. Here is an example file for /etc/collectd/collectd.conf.
-Make sure to adjust Host “targetfqdnhec” to your Splunk Server providing the HEC input and replace the token depending to your installation .
+Make sure to adjust Host “targetfqdnhec” to your Splunk server providing the HEC input and replace the token according to your installation.
 <br/><br/>
 <pre>Hostname "myclient.fqdn.com"
 FQDNLookup false
@@ -153,17 +153,17 @@ LoadPlugin logfile
         
 <br/>   
 <h3>Data Volume</h3>       
-<p>From a reference enviroment we determined a license need of 61MB/host/day when you have an interval of 60 seconds. When you go down to a 5 minutes interval you will need 20% so 12MB/host/day.</p> <p>license needs increased about 240% license volume compared to version1 of the app as Splunk charge you for every delivered metric 150bytes.<br/>as reminder: the collectd graphite data had an average length of ~65 bytes.</p>
+<p>With a reference enviroment we determined a license need of 61MB/host/day when you have an interval of 60 seconds. When you go down to a 5 minutes interval you will need 20% so 12MB/host/day.</p> <p>License needs increased about 240% compared to version1 of the app as Splunk charges 150bytes for every delivered metric.<br/>As a reminder: the collectd graphite data had an average length of ~65 bytes.</p>
 <br/>
         
 <h3>Client names</h3>       
-The clientname is determined from collectd.conf hostname entry. please ensure the hostname is set correctly.
+The client name is determined from collectd.conf hostname entry. Please ensure the hostname is set correctly.
 
 <h3>Hostgroups</h3>       
-You can assign hosts to self-configured hostgroups. These hostgroups are used for an inital grouping in the dashbards. A host could be assigned to multiple hostgroups. 
+You can assign hosts to self-configured hostgroups. These hostgroups are used for an inital grouping in the dashboards. A host can be assigned to multiple hostgroups. 
 You create and edit hostgroups in the lookups/hostgroups.csv file. 
 <br/>
-In this example you have 5 hostsgroups. The default group all contains all hosts. Production contains hosts with "prd" prefix. EC2 Instances are prefixed by "ip-"
+In this example there are 5 hostgroups. The default group "all" contains all hosts. Production contains hosts with "prd" prefix. EC2 instances are prefixed by "ip-".
 <pre>
 hostgroup,hosts
 all,"*"
@@ -173,32 +173,32 @@ Development,"dev*"
 EC2instances,"ip-*"
 </pre>
 <br/>   
-At this moment you can only use "*" as a wildcard for the hostname - no comma seperated list for multiple entries. 
+At the moment you can only use "*" as a wildcard for the hostname - no comma seperated list for multiple entries. 
 
 <br/>
 <h3>Dashboard documentation</h3>       
 
-<p>Navigation is the same for every dashboard. In default view every hosts will be shown. For fast comparison of multiple hosts you can use the Hosts dropdown. 
-Hostgroups will help you for searching and comparing large amount of hosts.</p>
+<p>Navigation is the same for every dashboard. In default view every host will be shown. For fast comparison of multiple hosts you can use the "Hosts" dropdown. 
+Hostgroups will help you when searching and comparing large amount of hosts.</p>
 
-        <ul><li>CPU Load: Displays average and max load of systems for the defined timeframe (default 24h)</li></ul>        
-        <ul><li>CPU Usage: Displays average and max cpu usage by host. By select Object you can drilldown to every system core</li></ul>
-        <ul><li>Memory: Average and max values for used, free, cached and swapped memory is displayed on host basis</li></ul>
-        <ul><li>Storage Trends: Storage increase by hosts in GB will show storage usage on a host in the defined timeframe. 
+        <ul><li>CPU load: Displays average and max load of systems for the defined timeframe (default 24h).</li></ul>        
+        <ul><li>CPU usage: Displays average and max cpu usage by host. By selecting "Object" you can drill down to every system core.</li></ul>
+        <ul><li>Memory: Average and max values for used, free, cached and swapped memory is displayed on host basis.</li></ul>
+        <ul><li>Storage trends: Storage increase by host in GB will show storage usage on a host in the defined timeframe. 
 		Notice that it will only display hosts and partition where a storage in-/decrease occurs. If you have a partition which is not changing for any kind of 
-		reason the Table Storage changes by partition will not display this partition.</li></ul>
-        <ul><li>Storage Timeline: the storage timeline will display a timechart for a host (default with all partitions) and a table displaying the usage on a per day basis. 
+		reason this partition will not bes displayed.</li></ul>
+        <ul><li>Storage timeline: The storage timeline will display a timechart for a host (default with all partitions) and a table displaying the usage on a per day basis. 
 		This will help you to see the sum of all usage and which partition is in-/decreasing most.</li></ul>
-        <ul><li>Process state: amount of concurrently running/sleeping/zombie processes and their ratio is displayed. </li></ul>
-        <ul><li>Network Throughput and Errors: Additionally to the host you are able to select a dedicated network interface on the host. 
-		If there are no errors for any interface on the hosts the last panel “error sum by host and interface” will be empty</li></ul>        
-        <ul><li>Metric Explorer: Using the metric explorer you can browse all (also custom) metrics which are not used in any dashboard</li></ul>        
+        <ul><li>Process state: Amount of concurrently running/sleeping/zombie processes and their ratio is displayed. </li></ul>
+        <ul><li>Network throughput and errors: Additionally to the host you are able to select a dedicated network interface on the host. 
+		If there are no errors for any interface on the host the last panel "error sum by host and interface" will be empty.</li></ul>        
+        <ul><li>Metric explorer: Using the metric explorer you can browse all (also custom) metrics which are not used in any dashboard.</li></ul>        
 
 <br/><hr/>
 <h3>Feedback</h3>             
 
-If you have Feedback, issues or questions please use issue tracker at Github page: http://github.com/Nexinto/collectd.git . 
-For direct Feedback please contact: andreas@batchworks.de or splunkapps@nexinto.com.  
+If you have feedback, issues or questions please use issue tracker at Github page: http://github.com/Nexinto/collectd.git . 
+For direct feedback please contact: andreas@batchworks.de or splunkapps@nexinto.com.  
 
         <br/><br/>
 This app was created by:
