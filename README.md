@@ -26,7 +26,7 @@ Features:
 
 #### Server Side
 
-Only Splunk Enterprise 7.1 is supported as the app useses metric index and anhanced mstats command. You will only need to deploy this app to your searchheads.
+Only Splunk Enterprise 7.1 is supported as the app useses metric index and enhanced mstats command. You will only need to deploy this app to your searchheads.
 
 In your Splunk enviroment you need to have Splunk HTTP Event Collector (HEC) up and running. Here is a simple setup..
 
@@ -206,7 +206,7 @@ If there are no errors for any interface on the host the last panel "error sum b
 
 ### Feedback and Contact ###
 
-If you have feedback, issues or questions please use issue tracker at Github page: https://github.com/schose/collectd2 . 
+If you have feedback, issues or questions please use issue tracker at Github page: https://github.com/schose/collectd2. 
 For direct feedback please contact: andreas@batchworks.de or splunkapps@nexinto.com.  
 
 This app was created by:
