@@ -1,7 +1,2 @@
 hostgroup,hosts
 all,"*"
-Batchworks,"*batchworks*"
-BWLab,"*bwlab.loc*"
-NDFnet,"*ndfnet*"
-schose,"*schose*"
-ec2,"ip-*"
