@@ -1,4 +1,4 @@
-<form script="custom_layout_width.js">
+<form version="1.1" script="custom_layout_width.js">
   <label>Network Throughput and Errors</label>
   <!-- errors -->
   <fieldset submitButton="false" autoRun="true">
