@@ -1,4 +1,4 @@
-<form>
+<form version="1.1">
   <label>Metric Explorer</label>
   <!-- errors -->
   <fieldset submitButton="false" autoRun="true">
